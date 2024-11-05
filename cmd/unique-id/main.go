@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"syscall"
 	"time"
 
 	"os"
@@ -18,39 +19,61 @@ func logError(err error) {
 	log.Fatalf("ERROR: %s", err)
 }
 
-type DistributedLock struct{}
+type DistributedLock struct {
+	lock *os.File
+}
 
 func (c *DistributedLock) Lock(sleep time.Duration, retry int) error {
 	count := 0
 
-	if _, err := os.Stat("lock"); err == nil {
-		for count <= retry {
-			count++
-			time.Sleep(sleep)
+	lockFile, err := os.Open("lock")
+
+	if err != nil && os.IsNotExist(err) {
+		newLockFile, err := os.Create("lock")
+
+		if err != nil {
+			return err
 		}
 
-		return errors.New("could not acquire lock")
+		lockFile = newLockFile
 	}
 
-	os.Create("lock")
+	c.lock = lockFile
+
+	for count < retry {
+		if err := syscall.Flock(int(c.lock.Fd()), syscall.LOCK_EX); err != nil {
+			break
+		}
+
+		count++
+		time.Sleep(sleep)
+	}
+
+	if count == retry {
+		return errors.New("could not acquire lock")
+	}
 
 	return nil
 }
 
 func (c *DistributedLock) Unlock() error {
-	if _, err := os.Stat("lock"); err == nil {
-		os.Remove("lock")
-
-		return nil
+	if c.lock == nil {
+		return errors.New("lock not initialized")
 	}
 
-	return errors.New("lock not initialized")
+	err := syscall.Flock(int(c.lock.Fd()), syscall.LOCK_UN)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateId() int {
 	l := DistributedLock{}
 
-	l.Lock(time.Duration(time.Millisecond*200), 10)
+	l.Lock(time.Duration(time.Nanosecond), 10)
 	defer l.Unlock()
 
 	if _, err := os.Stat("db.txt"); errors.Is(err, os.ErrNotExist) {
