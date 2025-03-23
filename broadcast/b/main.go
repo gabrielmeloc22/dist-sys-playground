@@ -8,6 +8,39 @@ import (
 	"slices"
 )
 
+type BroadcastRequest struct {
+	MsgID   int    `json:"msg_id"`
+	Type    string `json:"type"`
+	Message int    `json:"message"`
+}
+
+type BroadcastResponse struct {
+	MsgID int    `json:"msg_id"`
+	Type  string `json:"type"`
+}
+
+type ReadResponse struct {
+	Type     string `json:"type"`
+	MsgID    int    `json:"msg_id"`
+	Messages []int  `json:"messages"`
+}
+
+type ReadRequest struct {
+	Type  string `json:"type"`
+	MsgID int    `json:"msg_id"`
+}
+
+type TopologyRequest struct {
+	Type     string              `json:"type"`
+	MsgID    int                 `json:"msg_id"`
+	Topology map[string][]string `json:"topology"`
+}
+
+type TopologyResponse struct {
+	Type  string `json:"type"`
+	MsgID int    `json:"msg_id"`
+}
+
 func broadcast(msg int, neighbors []string, n *maelstrom.Node) error {
 
 	for _, nodeID := range neighbors {
@@ -40,11 +73,7 @@ func main() {
 
 	// cluster topology
 	n.Handle("topology", func(msg maelstrom.Message) error {
-		body := struct {
-			MsgID    int                 `json:"msg_id"`
-			Type     string              `json:"type"`
-			Topology map[string][]string `json:"topology"`
-		}{}
+		var body TopologyRequest
 
 		if err := json.Unmarshal(msg.Body, &body); err != nil {
 			return err
@@ -52,39 +81,25 @@ func main() {
 
 		neighbors = body.Topology[n.ID()]
 
-		res := struct {
-			MsgID int    `json:"msg_id"`
-			Type  string `json:"type"`
-		}{
+		return n.Reply(msg, TopologyResponse{
 			MsgID: body.MsgID,
 			Type:  "topology_ok",
-		}
-
-		return n.Reply(msg, res)
+		})
 	})
 
 	// read
 	n.Handle("read", func(msg maelstrom.Message) error {
-		body := struct {
-			MsgID int    `json:"msg_id"`
-			Type  string `json:"type"`
-		}{}
+		var body ReadRequest
 
 		if err := json.Unmarshal(msg.Body, &body); err != nil {
 			return err
 		}
 
-		res := struct {
-			MsgID    int    `json:"msg_id"`
-			Type     string `json:"type"`
-			Messages []int  `json:"messages"`
-		}{
+		return n.Reply(msg, ReadResponse{
 			MsgID:    body.MsgID,
 			Type:     "read_ok",
 			Messages: messages,
-		}
-
-		return n.Reply(msg, res)
+		})
 	})
 
 	// acknowledge broadcasted messages
@@ -94,31 +109,24 @@ func main() {
 
 	// broadcast messages on the cluster
 	n.Handle("broadcast", func(msg maelstrom.Message) error {
-		body := struct {
-			MsgID int    `json:"msg_id"`
-			Type  string `json:"type"`
-			Msg   int    `json:"message"`
-		}{}
+		var body BroadcastRequest
 
 		if err := json.Unmarshal(msg.Body, &body); err != nil {
 			return err
 		}
 
-		res := struct {
-			MsgID int    `json:"msg_id"`
-			Type  string `json:"type"`
-		}{
+		res := BroadcastResponse{
 			MsgID: body.MsgID,
 			Type:  "broadcast_ok",
 		}
 
-		if slices.Contains(messages, body.Msg) {
+		if slices.Contains(messages, body.Message) {
 			return n.Reply(msg, res)
 		}
 
-		messages = append(messages, body.Msg)
+		messages = append(messages, body.Message)
 
-		if err := broadcast(body.Msg, neighbors, n); err != nil {
+		if err := broadcast(body.Message, neighbors, n); err != nil {
 			return err
 		}
 

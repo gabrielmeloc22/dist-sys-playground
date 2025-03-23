@@ -22,7 +22,7 @@ tasks:
       - task: build
         vars:
           FILE_PATH: broadcast/b
-      - maelstrom test -w broadcast --bin ./build/broadcast/b --node-count 1 --time-limit 20 --rate 10
+      - maelstrom test -w broadcast --bin ./build/broadcast/b --node-count 5 --time-limit 20 --rate 10
 
   build:
     internal: true
