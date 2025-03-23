@@ -5,6 +5,7 @@ import (
 	"log"
 
 	maelstrom "github.com/jepsen-io/maelstrom/demo/go"
+	"slices"
 )
 
 func broadcast(msg int, neighbors []string, n *maelstrom.Node) error {
@@ -111,10 +112,8 @@ func main() {
 			Type:  "broadcast_ok",
 		}
 
-		for _, message := range messages {
-			if message == body.Msg {
-				return n.Reply(msg, res)
-			}
+		if slices.Contains(messages, body.Msg) {
+			return n.Reply(msg, res)
 		}
 
 		messages = append(messages, body.Msg)

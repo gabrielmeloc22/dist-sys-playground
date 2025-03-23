@@ -1,0 +1,30 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  test-unique-id:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: unique-id
+      - maelstrom test -w unique-ids --bin ./build/unique-id --time-limit 30 --rate 100000 --node-count 100 --availability total --nemesis partition
+
+  test-broadcast-a:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: broadcast/a
+      - maelstrom test -w broadcast --bin ./build/broadcast/a --node-count 1 --time-limit 20 --rate 10
+
+  test-broadcast-b:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: broadcast/b
+      - maelstrom test -w broadcast --bin ./build/broadcast/b --node-count 1 --time-limit 20 --rate 10
+
+  build:
+    internal: true
+    cmds:
+      - go build -o build/{{.FILE_PATH}} ./{{.FILE_PATH}}/main.go
