@@ -45,6 +45,13 @@ tasks:
           FILE_PATH: broadcast/e
       - maelstrom test -w broadcast --bin ./build/broadcast/e --node-count 25 --time-limit 20 --rate 100 --latency 100 --nemesis partition
 
+  test-g-counter:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: g-counter
+      - maelstrom test -w g-counter --bin ./build/g-counter/ --node-count 3 --time-limit 20 --rate 100 --nemesis partition
+
   build:
     internal: true
     cmds:
