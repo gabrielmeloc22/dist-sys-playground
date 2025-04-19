@@ -31,6 +31,20 @@ tasks:
           FILE_PATH: broadcast/c
       - maelstrom test -w broadcast --bin ./build/broadcast/c --node-count 5 --time-limit 20 --rate 10 --nemesis partition
 
+  test-broadcast-d:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: broadcast/d
+      - maelstrom test -w broadcast --bin ./build/broadcast/d --node-count 25 --time-limit 20 --rate 100 --latency 100 --nemesis partition
+
+  test-broadcast-e:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: broadcast/e
+      - maelstrom test -w broadcast --bin ./build/broadcast/e --node-count 25 --time-limit 20 --rate 100 --latency 100 --nemesis partition
+
   build:
     internal: true
     cmds:
