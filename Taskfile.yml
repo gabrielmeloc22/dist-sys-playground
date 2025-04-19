@@ -24,7 +24,20 @@ tasks:
           FILE_PATH: broadcast/b
       - maelstrom test -w broadcast --bin ./build/broadcast/b --node-count 5 --time-limit 20 --rate 10
 
+  test-broadcast-c:
+    cmds:
+      - task: build
+        vars:
+          FILE_PATH: broadcast/c
+      - maelstrom test -w broadcast --bin ./build/broadcast/c --node-count 5 --time-limit 20 --rate 10 --nemesis partition
+
   build:
     internal: true
     cmds:
       - go build -o build/{{.FILE_PATH}} ./{{.FILE_PATH}}/main.go
+
+  test-all:
+    cmds:
+      - task: test-unique-id
+      - task: test-broadcast-a
+      - task: test-broadcast-b
